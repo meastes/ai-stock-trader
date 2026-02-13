@@ -1,6 +1,6 @@
 ---
 name: portfolio-trader
-description: Research and execute stock trades to maximize total portfolio value using current_assets.csv, transaction_log.csv, and asset_value_tracker.csv. Use when deciding BUY or SELL actions, gathering market evidence from news/blog/social sources, marking the portfolio to current market value through update_valuation.py before trading, and recording trades through update_trades.py without editing CSV files directly.
+description: Research and execute stock trades to maximize total portfolio value using current_assets.csv, transaction_log.csv, and asset_value_tracker.csv. Use when deciding BUY or SELL actions, screening and ranking a broad candidate universe (top 30), running first-pass and second-pass research before committing to trades, marking the portfolio to current market value through update_valuation.py before trading, and recording trades through update_trades.py without editing CSV files directly.
 ---
 
 # Portfolio Trader
@@ -27,17 +27,21 @@ Research trade ideas, rank them by expected upside and risk, update portfolio va
 
 ### 2. Perform multi-source research
 
-1. Build a candidate universe with existing holdings plus 3-10 new symbols that have clear catalysts.
-2. Collect evidence from multiple source classes: financial news, company communications, market commentary, and social sentiment.
-3. Prefer recent information and verify contradictory claims before acting.
-4. Capture source URLs and dates for each thesis.
+1. Build a candidate universe with existing holdings plus enough new names to reach at least 30 total symbols.
+2. Run a first-pass screen across all 30 symbols using recent catalysts, liquidity, and evidence quality to rank names.
+3. Collect evidence from multiple source classes: financial news, company communications, market commentary, and social sentiment.
+4. Prefer recent information and verify contradictory claims before acting.
+5. Capture source URLs and dates for each thesis.
 
 Reference: `references/research-framework.md`.
 
-### 3. Build a trade shortlist
+### 3. Run second-pass research on top candidates
 
-1. Score each candidate on expected return, downside risk, confidence quality, and liquidity/execution quality.
-2. Propose no-trade if evidence quality is weak or signals conflict materially.
+1. Select the top 5-10 symbols from first-pass ranking for deep validation.
+2. Re-check thesis durability with a second-pass process: estimate revisions, valuation sanity, near-term event risk, and contradictory evidence.
+3. Score each second-pass symbol on expected return, downside risk, confidence quality, and liquidity/execution quality.
+4. Propose no-trade if evidence quality is weak or signals conflict materially.
+5. Produce final trade shortlist only from symbols that pass second-pass thresholds.
 
 ### 4. Mark portfolio to market before any trade
 
@@ -97,6 +101,8 @@ git commit -m "Update portfolio after trade cycle on YYYY-MM-DD"
 ## Guardrails
 
 - Maximize portfolio value, not trade count.
+- Research at least 30 symbols before selecting trade candidates.
+- Require second-pass research validation before placing any order.
 - Skip low-conviction ideas.
 - Avoid concentrated single-name risk unless evidence quality is exceptional.
 - Preserve cash buffer when macro or event risk is elevated.

@@ -1,1 +1,4 @@
 date,action,symbol,shares,price_per_share,total_transaction_amount
+2026-02-13,BUY,SPY,5,681.27,3406.35
+2026-02-13,BUY,QQQ,4,600.64,2402.56
+2026-02-13,BUY,XLF,35,51.69,1809.15

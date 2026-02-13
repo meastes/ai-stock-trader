@@ -275,17 +275,53 @@ def _apply_transaction(assets: Dict[str, Decimal], transaction: Transaction) -> 
         assets.pop(transaction.symbol, None)
 
 
-def _infer_initial_cash(snapshots: List[Snapshot], errors: List[str]) -> Decimal | None:
+def _reverse_transaction(assets: Dict[str, Decimal], transaction: Transaction, errors: List[str]) -> None:
+    shares = assets.get(transaction.symbol, Decimal("0"))
+    cash = assets.get("CASH", Decimal("0"))
+
+    if transaction.action == "BUY":
+        assets["CASH"] = cash + transaction.total
+        remaining = shares - transaction.shares
+        if remaining < 0:
+            errors.append(
+                f"{CURRENT_ASSETS_FILE}: cannot reverse BUY for '{transaction.symbol}' on {transaction.trade_date}; "
+                "share count is inconsistent with transaction_log."
+            )
+            return
+        if remaining > 0:
+            assets[transaction.symbol] = remaining
+        else:
+            assets.pop(transaction.symbol, None)
+        return
+
+    assets["CASH"] = cash - transaction.total
+    assets[transaction.symbol] = shares + transaction.shares
+
+
+def _infer_first_snapshot_assets(
+    assets: Dict[str, Decimal],
+    transactions: List[Transaction],
+    snapshots: List[Snapshot],
+    errors: List[str],
+) -> Dict[str, Decimal] | None:
     if not snapshots:
-        errors.append(f"{ASSET_VALUE_FILE}: expected at least one row to infer initial CASH.")
+        errors.append(f"{ASSET_VALUE_FILE}: expected at least one row to validate snapshots.")
         return None
 
-    first = snapshots[0]
-    cash = first.value_by_symbol.get("CASH")
-    if cash is None:
-        errors.append(f"{ASSET_VALUE_FILE} row for {first.snapshot_date}: missing CASH value.")
+    first_snapshot_date = snapshots[0].snapshot_date
+    inferred_assets = dict(assets)
+    later_transactions = [tx for tx in transactions if tx.trade_date > first_snapshot_date]
+
+    for transaction in reversed(later_transactions):
+        _reverse_transaction(inferred_assets, transaction, errors)
+
+    if "CASH" not in inferred_assets:
+        errors.append(
+            f"{CURRENT_ASSETS_FILE}: cannot infer first snapshot holdings because CASH is missing after reverse replay."
+        )
         return None
-    return cash
+
+    return inferred_assets
 
 
 def _validate_cross_file_consistency(
@@ -294,15 +330,34 @@ def _validate_cross_file_consistency(
     snapshots: List[Snapshot],
     errors: List[str],
 ) -> None:
-    initial_cash = _infer_initial_cash(snapshots, errors)
-    if initial_cash is None:
+    first_snapshot_assets = _infer_first_snapshot_assets(assets, transactions, snapshots, errors)
+    if first_snapshot_assets is None:
         return
 
     sorted_transactions = sorted(transactions, key=lambda item: item.trade_date)
-    expected_assets: Dict[str, Decimal] = {"CASH": initial_cash}
-    tx_index = 0
+    first_snapshot = snapshots[0]
+    first_snapshot_symbols = _ordered_symbols(first_snapshot_assets)
+    if first_snapshot.symbols != first_snapshot_symbols:
+        errors.append(
+            f"{ASSET_VALUE_FILE} row for {first_snapshot.snapshot_date}: assets_held is {first_snapshot.symbols} "
+            f"but expected {first_snapshot_symbols} from current_assets and transaction_log."
+        )
 
-    for snapshot in snapshots:
+    if "CASH" in first_snapshot.value_by_symbol:
+        first_snapshot_cash = first_snapshot.value_by_symbol["CASH"].quantize(TWOPLACES, rounding=ROUND_HALF_UP)
+        inferred_cash = first_snapshot_assets["CASH"].quantize(TWOPLACES, rounding=ROUND_HALF_UP)
+        if first_snapshot_cash != inferred_cash:
+            errors.append(
+                f"{ASSET_VALUE_FILE} row for {first_snapshot.snapshot_date}: CASH value {first_snapshot_cash} "
+                f"does not match inferred CASH amount {inferred_cash}."
+            )
+
+    expected_assets = dict(first_snapshot_assets)
+    tx_index = 0
+    while tx_index < len(sorted_transactions) and sorted_transactions[tx_index].trade_date <= first_snapshot.snapshot_date:
+        tx_index += 1
+
+    for snapshot in snapshots[1:]:
         while tx_index < len(sorted_transactions) and sorted_transactions[tx_index].trade_date <= snapshot.snapshot_date:
             _apply_transaction(expected_assets, sorted_transactions[tx_index])
             tx_index += 1
@@ -320,29 +375,7 @@ def _validate_cross_file_consistency(
                 f"date {snapshots[-1].snapshot_date}."
             )
 
-    expected_assets_from_all_transactions: Dict[str, Decimal] = {"CASH": initial_cash}
-    for transaction in sorted_transactions:
-        _apply_transaction(expected_assets_from_all_transactions, transaction)
-
-    expected_symbols = _ordered_symbols(expected_assets_from_all_transactions)
     current_symbols = _ordered_symbols(assets)
-    if current_symbols != expected_symbols:
-        errors.append(
-            f"{CURRENT_ASSETS_FILE}: symbols are {current_symbols} but expected {expected_symbols} from transaction_log."
-        )
-
-    for symbol in expected_symbols:
-        expected_amount = expected_assets_from_all_transactions[symbol].quantize(TWOPLACES, rounding=ROUND_HALF_UP)
-        current_amount = assets.get(symbol)
-        if current_amount is None:
-            errors.append(f"{CURRENT_ASSETS_FILE}: missing symbol '{symbol}'.")
-            continue
-        if current_amount.quantize(TWOPLACES, rounding=ROUND_HALF_UP) != expected_amount:
-            errors.append(
-                f"{CURRENT_ASSETS_FILE}: amount for '{symbol}' is {current_amount} "
-                f"but expected {expected_amount} from transaction_log."
-            )
-
     latest_snapshot = snapshots[-1]
     if latest_snapshot.symbols != current_symbols:
         errors.append(

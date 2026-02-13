@@ -68,7 +68,7 @@ class ValidateCsvsTests(unittest.TestCase):
         )
 
         errors = validate_csv_files(base_dir=self.base)
-        self.assertTrue(any("amount for 'AAPL'" in error for error in errors))
+        self.assertTrue(any("cannot reverse BUY for 'AAPL'" in error for error in errors))
 
     def test_detects_mismatch_between_snapshot_and_expected_holdings(self):
         process_trade(
@@ -92,6 +92,36 @@ class ValidateCsvsTests(unittest.TestCase):
 
         errors = validate_csv_files(base_dir=self.base)
         self.assertTrue(any("assets_held is ['CASH']" in error for error in errors))
+
+    def test_allows_first_day_trades_without_false_cash_or_symbol_mismatch(self):
+        process_trade(
+            action="BUY",
+            symbol="QQQ",
+            shares="10",
+            price_per_share="100",
+            trade_date="2026-02-13",
+            base_dir=self.base,
+        )
+        process_trade(
+            action="BUY",
+            symbol="SPY",
+            shares="10",
+            price_per_share="100",
+            trade_date="2026-02-13",
+            base_dir=self.base,
+        )
+        process_trade(
+            action="BUY",
+            symbol="XLF",
+            shares="10",
+            price_per_share="100",
+            trade_date="2026-02-13",
+            base_dir=self.base,
+        )
+        update_valuation(valuation_date="2026-02-14", prices="QQQ=105,SPY=101,XLF=50", base_dir=self.base)
+
+        errors = validate_csv_files(base_dir=self.base)
+        self.assertEqual(errors, [])
 
 
 if __name__ == "__main__":

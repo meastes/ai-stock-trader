@@ -78,6 +78,22 @@ python3 update_trades.py \
 2. Confirm `transaction_log.csv` contains the executed trades.
 3. Confirm `asset_value_tracker.csv` has an updated row for the trade date.
 
+### 7. Commit updated CSVs to git after all trades
+
+1. Stage only the portfolio tracking CSVs:
+
+```bash
+git add current_assets.csv transaction_log.csv asset_value_tracker.csv
+```
+
+2. Commit after all planned trades are complete:
+
+```bash
+git commit -m "Update portfolio after trade cycle on YYYY-MM-DD"
+```
+
+3. Do not include unrelated files in this commit.
+
 ## Guardrails
 
 - Maximize portfolio value, not trade count.
@@ -85,6 +101,7 @@ python3 update_trades.py \
 - Avoid concentrated single-name risk unless evidence quality is exceptional.
 - Preserve cash buffer when macro or event risk is elevated.
 - Reject action when required pricing data is missing.
+- Commit only `current_assets.csv`, `transaction_log.csv`, and `asset_value_tracker.csv` for trade-cycle updates.
 
 ## Outputs
 
@@ -94,3 +111,4 @@ Provide:
 2. Source-backed research summary with links.
 3. Commands executed (valuation update first, then trades).
 4. Expected portfolio impact and key risks.
+5. Git commit hash for the CSV update commit.

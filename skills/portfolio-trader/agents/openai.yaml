@@ -1,0 +1,4 @@
+interface:
+  display_name: "Portfolio Trader"
+  short_description: "Research-backed equity trade execution and tracking"
+  default_prompt: "Research opportunities, update valuation, and execute trades safely."

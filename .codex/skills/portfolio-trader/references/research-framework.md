@@ -6,14 +6,17 @@ Use this checklist before any trade decision.
 
 1. Build a universe of at least 30 symbols each cycle.
 2. Include current holdings first, then add liquid names with clear catalysts until reaching 30.
-3. Keep sector concentration in check during universe construction.
+3. Include at least 2 ETF candidates each cycle (for example, one broad-market ETF and one sector or thematic ETF).
+4. Keep sector concentration in check during universe construction.
 
 ## First-Pass Screening
 
 1. Run a quick screen across all 30 symbols.
 2. Score each symbol 1-5 for catalyst freshness, liquidity, and headline risk.
-3. Rank all symbols and keep only the top 5-10 for second-pass work.
-4. Reject trade decisions based only on first-pass output.
+3. Add ETF fit checks: fee drag, tracking quality, and average liquidity.
+4. Rank all symbols and keep only the top 5-10 for second-pass work.
+5. Keep at least 2 ETFs in the second-pass set when they meet minimum quality.
+6. Reject trade decisions based only on first-pass output.
 
 ## Evidence Minimum
 
@@ -58,6 +61,7 @@ Compute a weighted score:
 2. Prefer no-trade when sources materially conflict.
 3. Size down when macro risk is elevated or confidence is marginal.
 4. Re-check live prices immediately before submitting trade commands.
+5. Prefer ETF exposure when expected risk-adjusted upside is similar to single-stock alternatives.
 
 ## Second-Pass Validation
 

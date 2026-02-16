@@ -4,7 +4,6 @@
 from __future__ import annotations
 
 import argparse
-from datetime import date
 from pathlib import Path
 
 from update_trades import (
@@ -12,6 +11,7 @@ from update_trades import (
     CURRENT_ASSETS_FILE,
     TRANSACTION_LOG_FILE,
     TRANSACTION_LOG_HEADERS,
+    _today_iso_in_tracking_tz,
     _last_known_prices,
     _parse_prices,
     _read_assets,
@@ -33,7 +33,7 @@ def update_valuation(
     transaction_log_path = base / TRANSACTION_LOG_FILE
     asset_value_path = base / ASSET_VALUE_FILE
 
-    snapshot_date = valuation_date or date.today().isoformat()
+    snapshot_date = valuation_date or _today_iso_in_tracking_tz()
 
     assets = _read_assets(current_assets_path)
     tx_rows = _read_csv_rows(transaction_log_path, TRANSACTION_LOG_HEADERS)

@@ -2,6 +2,7 @@ import csv
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 from update_trades import (
     ASSET_VALUE_FILE,
@@ -154,6 +155,19 @@ class UpdateTradesTests(unittest.TestCase):
                 "portfolio_value": "10000.00",
             },
         )
+
+    def test_default_trade_date_uses_fixed_timezone_source(self):
+        with patch("update_trades._today_iso_in_tracking_tz", return_value="2026-02-14"):
+            process_trade(
+                action="BUY",
+                symbol="AAPL",
+                shares="10",
+                price_per_share="100",
+                base_dir=self.base,
+            )
+
+        transactions = _read_rows(self.base / TRANSACTION_LOG_FILE)
+        self.assertEqual(transactions[0]["date"], "2026-02-14")
 
 
 if __name__ == "__main__":

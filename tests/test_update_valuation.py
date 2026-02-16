@@ -2,6 +2,7 @@ import csv
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 from update_trades import (
     ASSET_VALUE_FILE,
@@ -117,6 +118,13 @@ class UpdateValuationTests(unittest.TestCase):
 
         with self.assertRaisesRegex(ValueError, "Missing valuation price for held symbol MSFT"):
             update_valuation(valuation_date="2026-02-14", base_dir=self.base)
+
+    def test_default_valuation_date_uses_fixed_timezone_source(self):
+        with patch("update_valuation._today_iso_in_tracking_tz", return_value="2026-02-14"):
+            update_valuation(base_dir=self.base)
+
+        values = _read_rows(self.base / ASSET_VALUE_FILE)
+        self.assertEqual(values[-1]["date"], "2026-02-14")
 
 
 if __name__ == "__main__":

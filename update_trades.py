@@ -6,10 +6,11 @@ from __future__ import annotations
 import argparse
 import csv
 from dataclasses import dataclass
-from datetime import date
+from datetime import datetime
 from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 from pathlib import Path
 from typing import Dict, Iterable, List
+from zoneinfo import ZoneInfo
 
 CURRENT_ASSETS_HEADERS = ["symbol", "amount"]
 TRANSACTION_LOG_HEADERS = [
@@ -25,6 +26,9 @@ ASSET_VALUE_HEADERS = ["date", "assets_held", "asset_values", "portfolio_value"]
 CURRENT_ASSETS_FILE = "current_assets.csv"
 TRANSACTION_LOG_FILE = "transaction_log.csv"
 ASSET_VALUE_FILE = "asset_value_tracker.csv"
+
+TRACKING_TIMEZONE_NAME = "America/New_York"
+TRACKING_TIMEZONE = ZoneInfo(TRACKING_TIMEZONE_NAME)
 
 TWOPLACES = Decimal("0.01")
 
@@ -67,10 +71,14 @@ def _ordered_symbols(assets: Dict[str, Decimal]) -> List[str]:
     return symbols
 
 
+def _today_iso_in_tracking_tz() -> str:
+    return datetime.now(TRACKING_TIMEZONE).date().isoformat()
+
+
 def initialize_files(base_dir: str | Path = ".", initial_cash: str = "10000.00", initial_date: str | None = None) -> None:
     base = Path(base_dir)
     base.mkdir(parents=True, exist_ok=True)
-    start_date = initial_date or date.today().isoformat()
+    start_date = initial_date or _today_iso_in_tracking_tz()
     cash = _parse_decimal(initial_cash, "initial cash")
     if cash < 0:
         raise ValueError("Initial cash cannot be negative.")
@@ -239,7 +247,7 @@ def process_trade(
     if share_price <= 0:
         raise ValueError("Price per share must be greater than 0.")
 
-    tx_date = trade_date or date.today().isoformat()
+    tx_date = trade_date or _today_iso_in_tracking_tz()
     trade = Trade(
         action=action_normalized,
         symbol=symbol_normalized,
